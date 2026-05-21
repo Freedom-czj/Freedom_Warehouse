@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频转GIF - 表情包制作工具</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #FF6B35;
+            --primary-dark: #E55A2B;
+            --bg-dark: #1A1A2E;
+            --bg-card: #16213E;
+            --text-main: #EAEAEA;
+            --text-muted: #A0A0A0;
+            --border: #2A3A5A;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #1A1A2E 0%, #0F3460 100%);
+            min-height: 100vh;
+            color: var(--text-main);
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #FF6B35, #FFB84D);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .upload-area {
+            border: 3px dashed var(--border);
+            border-radius: 1rem;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255,255,255,0.02);
+        }
+
+        .upload-area:hover,
+        .upload-area.dragover {
+            border-color: var(--primary);
+            background: rgba(255,107,53,0.05);
+        }
+
+        .upload-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1rem;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+        }
+
+        .upload-text {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-hint {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .video-preview {
+            width: 100%;
+            border-radius: 0.75rem;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .video-preview.show {
+            display: block;
+        }
+
+        .params-section {
+            margin-top: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .param-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .param-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .param-value {
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--border);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            background: var(--primary-dark);
+        }
+
+        .time-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .time-input input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            font-size: 1rem;
+        }
+
+        .time-input input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .time-input label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 0.75rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255,107,53,0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid var(--border);
+            color: var(--text-main);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .preview-area {
+            text-align: center;
+        }
+
+        .gif-preview {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 0.75rem;
+            margin: 1.5rem 0;
+            display: none;
+            border: 2px solid var(--border);
+        }
+
+        .gif-preview.show {
+            display: inline-block;
+        }
+
+        .empty-state {
+            padding: 4rem 2rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+
+        .progress-container {
+            margin-top: 1.5rem;
+            display: none;
+        }
+
+        .progress-container.show {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #FFB84D);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .file-info {
+            background: var(--bg-dark);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .file-info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-info-row:last-child {
+            margin-bottom: 0;
+        }
+
+        @media (max-width: 900px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 600px) {
+            header h1 {
+                font-size: 1.8rem;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎬 视频转GIF</h1>
+            <p>快速制作你的专属表情包</p>
+        </header>
+
+        <div class="main-grid">
+            <div class="card">
+                <div class="section-title">📤 上传视频</div>
+                
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">点击或拖拽上传视频</div>
+                    <div class="upload-hint">支持 MP4, WebM, MOV 等格式</div>
+                </div>
+                
+                <input type="file" id="fileInput" accept="video/*" style="display: none;">
+                
+                <video class="video-preview" id="videoPreview" controls></video>
+                
+                <div class="file-info" id="fileInfo" style="display: none;">
+                    <div class="file-info-row">
+                        <span>文件名</span>
+                        <span id="fileName">-</span>
+                    </div>
+                    <div class="file-info-row">
+                        <span>时长</span>
+                        <span id="fileDuration">-</span>
+                    </div>
+                    <div class="file-info-row">
+                        <span>尺寸</span>
+                        <span id="fileSize">-</span>
+                    </div>
+                </div>
+
+                <div class="params-section">
+                    <div class="section-title">⚙️ 转换参数</div>
+                    
+                    <div class="param-group">
+                        <div class="param-label">
+                            <span>帧率 (FPS)</span>
+                            <span class="param-value" id="fpsValue">10</span>
+                        </div>
+                        <input type="range" id="fpsSlider" min="5" max="30" value="10">
+                    </div>
+
+                    <div class="param-group">
+                        <div class="param-label">
+                            <span>宽度</span>
+                            <span class="param-value" id="widthValue">480</span>
+                        </div>
+                        <input type="range" id="widthSlider" min="200" max="800" value="480" step="10">
+                    </div>
+
+                    <div class="param-group">
+                        <div class="param-label">
+                            <span>质量</span>
+                            <span class="param-value" id="qualityValue">10</span>
+                        </div>
+                        <input type="range" id="qualitySlider" min="1" max="20" value="10">
+                    </div>
+
+                    <div class="time-inputs">
+                        <div class="time-input">
+                            <label>起始时间 (秒)</label>
+                            <input type="number" id="startTime" value="0" min="0" step="0.1">
+                        </div>
+                        <div class="time-input">
+                            <label>结束时间 (秒)</label>
+                            <input type="number" id="endTime" value="0" min="0" step="0.1">
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" id="convertBtn" disabled>
+                        🔄 开始转换
+                    </button>
+                </div>
+
+                <div class="progress-container" id="progressContainer">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">准备中...</div>
+                </div>
+            </div>
+
+            <div class="card preview-area">
+                <div class="section-title">👀 预览 & 下载</div>
+                
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-state-icon">🎞️</div>
+                    <p>上传视频并转换后<br>这里将显示GIF预览</p>
+                </div>
+
+                <img class="gif-preview" id="gifPreview" alt="GIF预览">
+                
+                <button class="btn btn-primary" id="downloadBtn" style="display: none;">
+                    💾 下载GIF
+                </button>
+                
+                <button class="btn btn-secondary" id="resetBtn" style="display: none;">
+                    🔄 重新上传
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="gif.js"></script>
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const videoPreview = document.getElementById('videoPreview');
+        const fileInfo = document.getElementById('fileInfo');
+        const convertBtn = document.getElementById('convertBtn');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const gifPreview = document.getElementById('gifPreview');
+        const emptyState = document.getElementById('emptyState');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const fpsSlider = document.getElementById('fpsSlider');
+        const widthSlider = document.getElementById('widthSlider');
+        const qualitySlider = document.getElementById('qualitySlider');
+        const fpsValue = document.getElementById('fpsValue');
+        const widthValue = document.getElementById('widthValue');
+        const qualityValue = document.getElementById('qualityValue');
+        const startTimeInput = document.getElementById('startTime');
+        const endTimeInput = document.getElementById('endTime');
+
+        let selectedFile = null;
+        let videoDuration = 0;
+        let generatedGifBlob = null;
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) handleFile(files[0]);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) handleFile(e.target.files[0]);
+        });
+
+        function handleFile(file) {
+            if (!file.type.startsWith('video/')) {
+                alert('请上传视频文件！');
+                return;
+            }
+
+            selectedFile = file;
+            const url = URL.createObjectURL(file);
+            videoPreview.src = url;
+            videoPreview.classList.add('show');
+
+            videoPreview.onloadedmetadata = () => {
+                videoDuration = videoPreview.duration;
+                document.getElementById('fileName').textContent = file.name;
+                document.getElementById('fileDuration').textContent = videoDuration.toFixed(1) + 's';
+                document.getElementById('fileSize').textContent = videoPreview.videoWidth + 'x' + videoPreview.videoHeight;
+                fileInfo.style.display = 'block';
+                
+                startTimeInput.value = 0;
+                endTimeInput.value = videoDuration.toFixed(1);
+                startTimeInput.max = videoDuration;
+                endTimeInput.max = videoDuration;
+
+                convertBtn.disabled = false;
+            };
+        }
+
+        fpsSlider.addEventListener('input', () => {
+            fpsValue.textContent = fpsSlider.value;
+        });
+
+        widthSlider.addEventListener('input', () => {
+            widthValue.textContent = widthSlider.value;
+        });
+
+        qualitySlider.addEventListener('input', () => {
+            qualityValue.textContent = qualitySlider.value;
+        });
+
+        convertBtn.addEventListener('click', convertToGif);
+
+        function convertToGif() {
+            if (!selectedFile) return;
+
+            const fps = parseInt(fpsSlider.value);
+            const width = parseInt(widthSlider.value);
+            const quality = parseInt(qualitySlider.value);
+            const startTime = parseFloat(startTimeInput.value) || 0;
+            const endTime = Math.min(parseFloat(endTimeInput.value) || videoDuration, videoDuration);
+
+            if (startTime >= endTime) {
+                alert('起始时间必须小于结束时间！');
+                return;
+            }
+
+            progressContainer.classList.add('show');
+            progressText.textContent = '正在加载视频...';
+            progressFill.style.width = '0%';
+            convertBtn.disabled = true;
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            let aspectRatio = videoPreview.videoWidth / videoPreview.videoHeight;
+            canvas.width = width;
+            canvas.height = Math.round(width / aspectRatio);
+
+            const gif = new GIF({
+                workers: 2,
+                quality: quality,
+                width: canvas.width,
+                height: canvas.height,
+                workerScript: 'gif.worker.js'
+            });
+
+            const duration = endTime - startTime;
+            const totalFrames = Math.floor(duration * fps);
+            let frameCount = 0;
+
+            gif.on('progress', (p) => {
+                progressFill.style.width = Math.round(p * 100) + '%';
+                progressText.textContent = '编码中... ' + Math.round(p * 100) + '%';
+            });
+
+            gif.on('finished', (blob) => {
+                generatedGifBlob = blob;
+                const url = URL.createObjectURL(blob);
+                gifPreview.src = url;
+                gifPreview.classList.add('show');
+                emptyState.style.display = 'none';
+                downloadBtn.style.display = 'block';
+                resetBtn.style.display = 'block';
+                progressContainer.classList.remove('show');
+                convertBtn.disabled = false;
+            });
+
+            function captureFrame() {
+                if (frameCount >= totalFrames) {
+                    progressText.textContent = '正在生成GIF...';
+                    gif.render();
+                    return;
+                }
+
+                const currentTime = startTime + (frameCount / fps);
+                videoPreview.currentTime = currentTime;
+            }
+
+            videoPreview.currentTime = startTime;
+
+            videoPreview.onseeked = () => {
+                ctx.drawImage(videoPreview, 0, 0, canvas.width, canvas.height);
+                gif.addFrame(ctx, { copy: true, delay: 1000 / fps });
+
+                frameCount++;
+                progressFill.style.width = Math.round((frameCount / totalFrames) * 80) + '%';
+                progressText.textContent = '采集帧... ' + frameCount + '/' + totalFrames;
+
+                if (frameCount < totalFrames) {
+                    setTimeout(captureFrame, 10);
+                } else {
+                    progressText.textContent = '正在生成GIF...';
+                    gif.render();
+                }
+            };
+        }
+
+        downloadBtn.addEventListener('click', () => {
+            if (!generatedGifBlob) return;
+            
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(generatedGifBlob);
+            a.download = 'converted_' + Date.now() + '.gif';
+            a.click();
+        });
+
+        resetBtn.addEventListener('click', () => {
+            fileInput.value = '';
+            videoPreview.src = '';
+            videoPreview.classList.remove('show');
+            fileInfo.style.display = 'none';
+            gifPreview.src = '';
+            gifPreview.classList.remove('show');
+            emptyState.style.display = 'block';
+            downloadBtn.style.display = 'none';
+            resetBtn.style.display = 'none';
+            progressContainer.classList.remove('show');
+            convertBtn.disabled = true;
+            selectedFile = null;
+            generatedGifBlob = null;
+        });
+    </script>
+</body>
+</html>
